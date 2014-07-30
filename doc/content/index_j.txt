@@ -110,11 +110,10 @@ wheelRadius      double             0.09525
 =============== =========== ============================== ====
 ポート名        ポート型    データ型                       意味
 =============== =========== ============================== ====
-currentWheelVelocity InPort      RTC::TimedDoubleSeq            
+currentWheelAngle InPort      RTC::TimedDoubleSeq            
 targetVelocity  InPort      RTC::TimedVelocity2D           
 updatePose      InPort      RTC::TimedPose2D               
 targetWheelVelocity OutPort     RTC::TimedDoubleSeq            
-currentVelocity OutPort     RTC::TimedVelocity2D           
 currentPose     OutPort     RTC::TimedPose2D               
 =============== =========== ============================== ====
 

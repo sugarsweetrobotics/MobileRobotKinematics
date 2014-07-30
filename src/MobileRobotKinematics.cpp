@@ -42,15 +42,15 @@ static const char* mobilerobotkinematics_spec[] =
 MobileRobotKinematics::MobileRobotKinematics(RTC::Manager* manager)
     // <rtc-template block="initializer">
   : RTC::DataFlowComponentBase(manager),
-    m_currentWheelVelocityIn("currentWheelVelocity", m_currentWheelVelocity),
+    m_currentWheelAngleIn("currentWheelAngle", m_currentWheelAngle),
     m_targetVelocityIn("targetVelocity", m_targetVelocity),
     m_updatePoseIn("updatePose", m_updatePose),
     m_targetWheelVelocityOut("targetWheelVelocity", m_targetWheelVelocity),
-    m_currentVelocityOut("currentVelocity", m_currentVelocity),
     m_currentPoseOut("currentPose", m_currentPose)
 
     // </rtc-template>
 {
+  x = y = theta = 0;
 }
 
 /*!
@@ -67,13 +67,12 @@ RTC::ReturnCode_t MobileRobotKinematics::onInitialize()
   // Registration: InPort/OutPort/Service
   // <rtc-template block="registration">
   // Set InPort buffers
-  addInPort("currentWheelVelocity", m_currentWheelVelocityIn);
+  addInPort("currentWheelAngle", m_currentWheelAngleIn);
   addInPort("targetVelocity", m_targetVelocityIn);
   addInPort("updatePose", m_updatePoseIn);
   
   // Set OutPort buffer
   addOutPort("targetWheelVelocity", m_targetWheelVelocityOut);
-  addOutPort("currentVelocity", m_currentVelocityOut);
   addOutPort("currentPose", m_currentPoseOut);
   
   // Set service provider to Ports
@@ -90,13 +89,14 @@ RTC::ReturnCode_t MobileRobotKinematics::onInitialize()
   bindParameter("wheelRadius", m_wheelRadius, "0.09525");
   // </rtc-template>
 
-  m_currentWheelVelocityIn.addConnectorDataListener(ON_BUFFER_WRITE,
-						    new WheelAngleListener());
+  m_currentWheelAngleIn.addConnectorDataListener(ON_BUFFER_WRITE,
+						    new WheelAngleListener(this));
   m_updatePoseIn.addConnectorDataListener(ON_BUFFER_WRITE,
-					  new UpdatePoseListener());
-
+					  new UpdatePoseListener(this));
   m_targetVelocityIn.addConnectorDataListener(ON_BUFFER_WRITE,
-					  new TargetVelocityListener());
+					  new TargetVelocityListener(this));
+
+  m_targetWheelVelocity.data.length(2);
   
   return RTC::RTC_OK;
 }

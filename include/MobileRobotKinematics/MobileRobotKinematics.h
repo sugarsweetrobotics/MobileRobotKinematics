@@ -33,44 +33,6 @@
 using namespace RTC;
 
 
-class WheelAngleListener
-  : public ConnectorDataListenerT<RTC::TimedDoubleSeq>
-{
-public:
-  WheelAngleListener() {}
-  virtual ~WheelAngleListener() {}
-
-  virtual void operator()(const ConnectorInfo& info,
-                          const RTC::TimedDoubleSeq& data) {
-  };
-};
-
-class TargetVelocityListener
-  : public ConnectorDataListenerT<RTC::TimedVelocity2D>
-{
-public:
-  TargetVelocityListener() {}
-  virtual ~TargetVelocityListener() {}
-
-  virtual void operator()(const ConnectorInfo& info,
-                          const RTC::TimedVelocity2D& data) {
-  };
-};
-
-class UpdatePoseListener
-  : public ConnectorDataListenerT<RTC::TimedPose2D>
-{
-public:
-  UpdatePoseListener() {}
-  virtual ~UpdatePoseListener() {}
-
-  virtual void operator()(const ConnectorInfo& info,
-                          const RTC::TimedPose2D& data) {
-
-  };
-};
-
-
 /*!
  * @class MobileRobotKinematics
  * @brief Mobile robot kinematics component
@@ -280,10 +242,10 @@ class MobileRobotKinematics
 
   // DataInPort declaration
   // <rtc-template block="inport_declare">
-  RTC::TimedDoubleSeq m_currentWheelVelocity;
+  RTC::TimedDoubleSeq m_currentWheelAngle;
   /*!
    */
-  InPort<RTC::TimedDoubleSeq> m_currentWheelVelocityIn;
+  InPort<RTC::TimedDoubleSeq> m_currentWheelAngleIn;
   RTC::TimedVelocity2D m_targetVelocity;
   /*!
    */
@@ -302,10 +264,6 @@ class MobileRobotKinematics
   /*!
    */
   OutPort<RTC::TimedDoubleSeq> m_targetWheelVelocityOut;
-  RTC::TimedVelocity2D m_currentVelocity;
-  /*!
-   */
-  OutPort<RTC::TimedVelocity2D> m_currentVelocityOut;
   RTC::TimedPose2D m_currentPose;
   /*!
    */
@@ -337,6 +295,127 @@ class MobileRobotKinematics
   
   // </rtc-template>
 
+  double x, y, theta;
+
+public:
+  double getAxleTrack() const {return m_axleTrack;}
+  double getWheelRadius() const {return m_wheelRadius;}
+  double getX() {return x;}
+  double getY() {return y;}
+  double getTheta() {return theta;}
+  void setX(const double a) {x=a;}
+  void setY(const double a) {y=a;}
+  void setTheta(const double a) {theta=a;}
+
+
+  void writeCurrentPose(const RTC::Time &tm) {
+    m_currentPose.tm = tm;
+    m_currentPose.data.position.x = x;
+    m_currentPose.data.position.y = y;
+    m_currentPose.data.heading = theta;
+    m_currentPoseOut.write();
+  }
+
+  void writeWheelVelocity(const RTC::Time &tm, const double wr, const double wl) {
+	  m_targetWheelVelocity.tm = tm;
+	  m_targetWheelVelocity.data[0] = wr;
+	  m_targetWheelVelocity.data[1] = wl;
+	  m_targetWheelVelocityOut.write();
+  }
+};
+
+
+class WheelAngleListener
+  : public ConnectorDataListenerT<RTC::TimedDoubleSeq>
+{
+private:
+  MobileRobotKinematics *m_pRTC;
+public:
+  WheelAngleListener(MobileRobotKinematics* pRTC) : m_pRTC(pRTC),
+							 m_oldRightWheelAngle(0.0),
+							 m_oldLeftWheelAngle(0.0) {}
+  virtual ~WheelAngleListener() {}
+
+  virtual void operator()(const ConnectorInfo& info,
+                          const RTC::TimedDoubleSeq& data) {
+    double axleTrack = m_pRTC->getAxleTrack();
+    double wheelRadius = m_pRTC->getWheelRadius();
+    double rightWheelAngle = data.data[0];
+    double leftWheelAngle = data.data[1];
+    static const double PI = 3.14159265358979;
+    double x = m_pRTC->getX();
+    double y = m_pRTC->getY();
+    double theta = m_pRTC->getTheta();
+
+    double deltaR = rightWheelAngle - m_oldRightWheelAngle;
+    if (deltaR > PI) { deltaR -= 2*PI; }
+    else if (deltaR < -PI) { deltaR += 2*PI; }
+    double deltaL = leftWheelAngle - m_oldLeftWheelAngle;
+    if (deltaL > PI) { deltaL -= 2*PI; }
+    else if (deltaL < -PI) { deltaL += 2*PI; }
+
+    double deltaTrans = (deltaR+deltaL) * wheelRadius / 2;
+    double deltaTheta = (deltaR-deltaL) * wheelRadius / axleTrack;
+
+    x = x + deltaTrans * cos(theta + deltaTheta/2);
+    y = y + deltaTrans * sin(theta + deltaTheta/2);
+    theta = theta + deltaTheta;
+    
+    m_pRTC->setX(x);
+    m_pRTC->setY(y);
+    m_pRTC->setTheta(theta);
+
+    m_oldRightWheelAngle = rightWheelAngle;
+    m_oldLeftWheelAngle  = leftWheelAngle;
+
+    m_pRTC->writeCurrentPose(data.tm);
+  };
+private:
+  double m_oldRightWheelAngle;
+  double m_oldLeftWheelAngle;
+};
+
+class TargetVelocityListener
+  : public ConnectorDataListenerT<RTC::TimedVelocity2D>
+{
+private:
+  MobileRobotKinematics *m_pRTC;
+public:
+  TargetVelocityListener(MobileRobotKinematics* pRTC) : m_pRTC(pRTC) {}
+  virtual ~TargetVelocityListener() {}
+
+  virtual void operator()(const ConnectorInfo& info,
+                          const RTC::TimedVelocity2D& data) {
+	double axleTrack = m_pRTC->getAxleTrack();
+    double wheelRadius = m_pRTC->getWheelRadius();
+
+	double v_buf = data.data.va * axleTrack/2;
+	double vr = data.data.vx + v_buf;
+	double vl = data.data.vx - v_buf;
+
+	double omegaR = vr / wheelRadius;
+	double omegaL = vl / wheelRadius;
+
+	m_pRTC->writeWheelVelocity(data.tm, omegaR, omegaL);
+  };
+};
+
+class UpdatePoseListener
+  : public ConnectorDataListenerT<RTC::TimedPose2D>
+{
+private:
+  MobileRobotKinematics *m_pRTC;
+public:
+  UpdatePoseListener(MobileRobotKinematics* pRTC) : m_pRTC(pRTC) {}
+  virtual ~UpdatePoseListener() {}
+
+  virtual void operator()(const ConnectorInfo& info,
+                          const RTC::TimedPose2D& data) {
+							  m_pRTC->setX(data.data.position.x);
+							  m_pRTC->setY(data.data.position.y);
+							  m_pRTC->setTheta(data.data.heading);
+
+  };
 };
 
 
