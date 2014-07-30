@@ -29,7 +29,47 @@
 
 // </rtc-template>
 
+
 using namespace RTC;
+
+
+class WheelAngleListener
+  : public ConnectorDataListenerT<RTC::TimedDoubleSeq>
+{
+public:
+  WheelAngleListener() {}
+  virtual ~WheelAngleListener() {}
+
+  virtual void operator()(const ConnectorInfo& info,
+                          const RTC::TimedDoubleSeq& data) {
+  };
+};
+
+class TargetVelocityListener
+  : public ConnectorDataListenerT<RTC::TimedVelocity2D>
+{
+public:
+  TargetVelocityListener() {}
+  virtual ~TargetVelocityListener() {}
+
+  virtual void operator()(const ConnectorInfo& info,
+                          const RTC::TimedVelocity2D& data) {
+  };
+};
+
+class UpdatePoseListener
+  : public ConnectorDataListenerT<RTC::TimedPose2D>
+{
+public:
+  UpdatePoseListener() {}
+  virtual ~UpdatePoseListener() {}
+
+  virtual void operator()(const ConnectorInfo& info,
+                          const RTC::TimedPose2D& data) {
+
+  };
+};
+
 
 /*!
  * @class MobileRobotKinematics
@@ -248,6 +288,10 @@ class MobileRobotKinematics
   /*!
    */
   InPort<RTC::TimedVelocity2D> m_targetVelocityIn;
+  RTC::TimedPose2D m_updatePose;
+  /*!
+   */
+  InPort<RTC::TimedPose2D> m_updatePoseIn;
   
   // </rtc-template>
 
@@ -262,6 +306,10 @@ class MobileRobotKinematics
   /*!
    */
   OutPort<RTC::TimedVelocity2D> m_currentVelocityOut;
+  RTC::TimedPose2D m_currentPose;
+  /*!
+   */
+  OutPort<RTC::TimedPose2D> m_currentPoseOut;
   
   // </rtc-template>
 

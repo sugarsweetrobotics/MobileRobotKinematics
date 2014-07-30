@@ -44,8 +44,10 @@ MobileRobotKinematics::MobileRobotKinematics(RTC::Manager* manager)
   : RTC::DataFlowComponentBase(manager),
     m_currentWheelVelocityIn("currentWheelVelocity", m_currentWheelVelocity),
     m_targetVelocityIn("targetVelocity", m_targetVelocity),
+    m_updatePoseIn("updatePose", m_updatePose),
     m_targetWheelVelocityOut("targetWheelVelocity", m_targetWheelVelocity),
-    m_currentVelocityOut("currentVelocity", m_currentVelocity)
+    m_currentVelocityOut("currentVelocity", m_currentVelocity),
+    m_currentPoseOut("currentPose", m_currentPose)
 
     // </rtc-template>
 {
@@ -67,10 +69,12 @@ RTC::ReturnCode_t MobileRobotKinematics::onInitialize()
   // Set InPort buffers
   addInPort("currentWheelVelocity", m_currentWheelVelocityIn);
   addInPort("targetVelocity", m_targetVelocityIn);
+  addInPort("updatePose", m_updatePoseIn);
   
   // Set OutPort buffer
   addOutPort("targetWheelVelocity", m_targetWheelVelocityOut);
   addOutPort("currentVelocity", m_currentVelocityOut);
+  addOutPort("currentPose", m_currentPoseOut);
   
   // Set service provider to Ports
   
@@ -85,6 +89,14 @@ RTC::ReturnCode_t MobileRobotKinematics::onInitialize()
   bindParameter("axleTrack", m_axleTrack, "0.331");
   bindParameter("wheelRadius", m_wheelRadius, "0.09525");
   // </rtc-template>
+
+  m_currentWheelVelocityIn.addConnectorDataListener(ON_BUFFER_WRITE,
+						    new WheelAngleListener());
+  m_updatePoseIn.addConnectorDataListener(ON_BUFFER_WRITE,
+					  new UpdatePoseListener());
+
+  m_targetVelocityIn.addConnectorDataListener(ON_BUFFER_WRITE,
+					  new TargetVelocityListener());
   
   return RTC::RTC_OK;
 }

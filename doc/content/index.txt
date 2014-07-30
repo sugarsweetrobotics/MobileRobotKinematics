@@ -120,8 +120,10 @@ Name            Type        Data type                      Purpose
 =============== =========== ============================== =======
 currentWheelVelocity InPort      RTC::TimedDoubleSeq            
 targetVelocity  InPort      RTC::TimedVelocity2D           
+updatePose      InPort      RTC::TimedPose2D               
 targetWheelVelocity OutPort     RTC::TimedDoubleSeq            
 currentVelocity OutPort     RTC::TimedVelocity2D           
+currentPose     OutPort     RTC::TimedPose2D               
 =============== =========== ============================== =======
 
 Examples
