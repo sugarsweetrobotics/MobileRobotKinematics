@@ -8,7 +8,7 @@
  */
 
 #include "MobileRobotKinematics.h"
-
+#include <math.h>
 // Module specification
 // <rtc-template block="module_spec">
 static const char* mobilerobotkinematics_spec[] =
