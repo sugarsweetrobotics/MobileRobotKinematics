@@ -18,7 +18,7 @@ static const char* mobilerobotkinematics_spec[] =
     "description",       "Mobile robot kinematics component",
     "version",           "1.0.0",
     "vendor",            "Sugar Sweet Robotics",
-    "category",          "Experimenta",
+    "category",          "Navigation",
     "activity_type",     "PERIODIC",
     "kind",              "DataFlowComponent",
     "max_instance",      "1",
